@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>DE - Politik</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="js/leaflet.js"></script>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="js/de-bundeslaender.js"></script>
+    <script type="text/javascript" src="js/index.js"></script>
+    <script type="text/javascript">
+        var geojsonStates;
+        var info = L.control();
+        var view = L.control();
+        var legend = L.control({position: 'bottomright'});
+
+        const map = L.map('map').setView([51.164, 10.454], 6);
+        const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            minZoom: 5,
+            maxZoom: 8,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        info.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+            this.update();
+            return this._div;
+        };
+        // method that we will use to update the control based on feature properties passed
+        info.update = function (props) {
+            this._div.innerHTML = '<h5>Recent German State Elections</h5><i><small>Source: Wikipedia</small></i><br />' + 
+                (props ? '<b>' + props.name + ' (' + props.election.year + ')</b> <br />' + props.election.winner.name + 
+                ': ' + props.election.winner.percentage + '% <br />' + props.election.runnerUp.name + ': ' + 
+                props.election.runnerUp.percentage + '%' : 'Hover over a state');
+        };
+        info.addTo(map);
+
+        view.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'view');
+            this._div.innerHTML = '<form><input type="radio" id="winner" name="view" value="winner" checked="checked">' +
+                '<label for="winner">Winner</label><br>' +
+                '<input type="radio" id="runnerUp" name="view" value="runner-up">' +
+                '<label for="runnerUp">Runner-up</label></form>';
+            L.DomEvent.on(this._div, 'change', (e) => {
+                this.update(e.target.value);
+            }, this);
+            return this._div;
+        }
+        view.update = function(value) {
+            currentView = value;
+            geojsonStates.setStyle(style);
+        };
+        view.addTo(map);
+
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend'),
+                polParty = ["AfD", "CDU", "CSU", "Die Linke", "FDP", "Grüne", "SPD"];
+            for (var i = 0; i < polParty.length; i++) {
+                div.innerHTML += '<i style="background:' + getColor(polParty[i]) + '"></i>' + polParty[i]  + '<br>';
+            }
+            return div;
+        };
+        legend.addTo(map);
+
+        geojsonStates = L.geoJSON(bundeslaenderData, {
+            style: style,
+            onEachFeature: onEachFeature
+        }).addTo(map);
+    </script>
+</body>
+</html>
